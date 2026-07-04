@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Light Card Demo</title>
+  <style>
+    body {
+      background: #f0f4f8;
+      font-family: sans-serif;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 24px;
+      padding: 32px;
+      justify-content: center;
+    }
+    h1 {
+      width: 100%;
+      text-align: center;
+      color: #333;
+      margin-bottom: 0;
+    }
+    h2 {
+      width: 100%;
+      font-size: 13px;
+      font-weight: 500;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin: 8px 0 0;
+    }
+    p.sub {
+      width: 100%;
+      text-align: center;
+      color: #666;
+      margin-top: 4px;
+    }
+    daires-hass-cards-light-card {
+      width: 260px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Light Card Demo</h1>
+  <p class="sub">Static previews — no Home Assistant required</p>
+
+  <h2>Examples</h2>
+  <daires-hass-cards-light-card id="ex-on"></daires-hass-cards-light-card>
+  <daires-hass-cards-light-card id="ex-off"></daires-hass-cards-light-card>
+  <daires-hass-cards-light-card id="ex-multi"></daires-hass-cards-light-card>
+
+  <h2>entity states</h2>
+  <daires-hass-cards-light-card id="state-on-bright"></daires-hass-cards-light-card>
+  <daires-hass-cards-light-card id="state-on-dim"></daires-hass-cards-light-card>
+  <daires-hass-cards-light-card id="state-off"></daires-hass-cards-light-card>
+
+  <h2>entity — name override</h2>
+  <daires-hass-cards-light-card id="name-from-hass"></daires-hass-cards-light-card>
+  <daires-hass-cards-light-card id="name-override"></daires-hass-cards-light-card>
+
+  <h2>entities (multi-light)</h2>
+  <daires-hass-cards-light-card id="entities-mixed"></daires-hass-cards-light-card>
+  <daires-hass-cards-light-card id="entities-all-on"></daires-hass-cards-light-card>
+  <daires-hass-cards-light-card id="entities-all-off"></daires-hass-cards-light-card>
+
+  <h2>background</h2>
+  <daires-hass-cards-light-card id="bg-white"></daires-hass-cards-light-card>
+  <daires-hass-cards-light-card id="bg-dark"></daires-hass-cards-light-card>
+  <daires-hass-cards-light-card id="bg-tinted"></daires-hass-cards-light-card>
+
+  <h2>interactions</h2>
+  <daires-hass-cards-light-card id="int-tap-toggle"></daires-hass-cards-light-card>
+  <daires-hass-cards-light-card id="int-tap-more-info"></daires-hass-cards-light-card>
+  <daires-hass-cards-light-card id="int-hold-navigate"></daires-hass-cards-light-card>
+  <daires-hass-cards-light-card id="int-multi"></daires-hass-cards-light-card>
+  <daires-hass-cards-light-card id="int-multi-light"></daires-hass-cards-light-card>
+
+  <h2>scenes (tap the photo icon to open)</h2>
+  <daires-hass-cards-light-card id="scenes-single"></daires-hass-cards-light-card>
+  <daires-hass-cards-light-card id="scenes-multi-light"></daires-hass-cards-light-card>
+  <daires-hass-cards-light-card id="scenes-name-override"></daires-hass-cards-light-card>
+
+  <script>
+    if (!customElements.get("ha-card")) {
+      customElements.define("ha-card", class extends HTMLElement {
+        connectedCallback() {
+          this.style.cssText = "display:block;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.15);overflow:hidden;";
+        }
+      });
+    }
+  </script>
+  <script src="light-card.js"></script>
+  <script>
+    const mockHass = {
+      states: {
+        "light.living_room": { state: "on",  attributes: { friendly_name: "Living Room", brightness: 230 } },
+        "light.office":      { state: "on",  attributes: { friendly_name: "Office",       brightness: 77  } },
+        "light.bedroom":     { state: "off", attributes: { friendly_name: "Bedroom" } },
+        "light.kitchen":     { state: "on",  attributes: { friendly_name: "Kitchen",      brightness: 191 } },
+        "light.hallway":     { state: "off", attributes: { friendly_name: "Hallway" } },
+        "light.bathroom":    { state: "on",  attributes: { friendly_name: "Bathroom",     brightness: 128 } },
+
+        "scene.morning":     { state: "unknown", attributes: { friendly_name: "Morning" } },
+        "scene.evening":     { state: "unknown", attributes: { friendly_name: "Evening" } },
+        "scene.movie_night": { state: "unknown", attributes: { friendly_name: "Movie Night" } },
+        "scene.reading":     { state: "unknown", attributes: { friendly_name: "Reading" } },
+      },
+      callService(domain, service, data) {
+        console.log(`Service called: ${domain}.${service}`, data);
+      },
+    };
+
+    function setup(id, config) {
+      const el = document.getElementById(id);
+      el.setConfig(config);
+      el.hass = mockHass;
+    }
+
+    // ── Examples ──────────────────────────────────────────────────────────────
+    setup("ex-on",    { entity: "light.living_room" });
+    setup("ex-off",   { entity: "light.bedroom" });
+    setup("ex-multi", { title: "All Lights", entities: ["light.living_room", "light.bedroom", "light.kitchen", "light.hallway", "light.office"] });
+
+    // ── entity states ─────────────────────────────────────────────────────────
+    setup("state-on-bright", { entity: "light.living_room" });  // on, 90%
+    setup("state-on-dim",    { entity: "light.office" });        // on, 30%
+    setup("state-off",       { entity: "light.bedroom" });       // off
+
+    // ── entity — name override ────────────────────────────────────────────────
+    setup("name-from-hass", { entity: "light.living_room" });
+    setup("name-override",  { entity: "light.living_room", name: "Lounge" });
+
+    // ── entities ──────────────────────────────────────────────────────────────
+    setup("entities-mixed",   { title: "Ground Floor", entities: ["light.living_room", "light.kitchen", "light.hallway", "light.bedroom"] });
+    setup("entities-all-on",  { title: "All On",       entities: ["light.living_room", "light.kitchen", "light.bathroom"] });
+    setup("entities-all-off", { title: "All Off",      entities: ["light.bedroom", "light.hallway"] });
+
+    // ── background ────────────────────────────────────────────────────────────
+    setup("bg-white",  { entity: "light.living_room", background: "#ffffff" });
+    setup("bg-dark",   { entity: "light.living_room", background: "#1c1c1e" });
+    setup("bg-tinted", { entity: "light.living_room", background: "#fff8e1" });
+
+    // ── interactions ──────────────────────────────────────────────────────────
+    setup("int-tap-toggle",     { entity: "light.living_room", interactions: [{ action: "toggle" }] });
+    setup("int-tap-more-info",  { entity: "light.living_room", interactions: [{ action: "more-info" }] });
+    setup("int-hold-navigate",  { entity: "light.living_room", interactions: [{ trigger: "hold", action: "navigate", path: "/lovelace/lights" }] });
+    setup("int-multi",          { entity: "light.living_room", interactions: [{ trigger: "tap", action: "toggle" }, { trigger: "hold", action: "more-info" }] });
+    setup("int-multi-light",    { title: "Ground Floor", entities: ["light.living_room", "light.kitchen", "light.bedroom"], interactions: [{ action: "toggle" }] });
+
+    // ── scenes ────────────────────────────────────────────────────────────────
+    // Single entity with scene picker icon
+    setup("scenes-single", {
+      entity: "light.living_room",
+      scenes: ["scene.morning", "scene.movie_night", "scene.evening", "scene.reading"],
+    });
+    // Multi-light with scenes
+    setup("scenes-multi-light", {
+      title: "Living Room",
+      entities: ["light.living_room", "light.kitchen", "light.hallway"],
+      scenes: ["scene.morning", "scene.movie_night", "scene.evening"],
+    });
+    // Name overrides on scenes
+    setup("scenes-name-override", {
+      entity: "light.living_room",
+      scenes: [
+        { entity: "scene.morning",     name: "Rise" },
+        { entity: "scene.movie_night", name: "Cinema" },
+        { entity: "scene.reading",     name: "Book" },
+      ],
+    });
+
+    document.addEventListener("hass-more-info", (e) => alert(`more-info: ${e.detail.entityId}`));
+    document.addEventListener("location-changed", () => alert(`navigate: ${window.location.pathname}`));
+  </script>
+</body>
+</html>
