@@ -279,13 +279,15 @@ class LightCard extends HTMLElement {
 
     this.shadowRoot.innerHTML = `
       <style>
-        :host { display: block; }
+        :host { display: block; height: 100%; }
+        ha-card { display: block; height: 100%; }
         .card {
           position: relative;
           background: ${background};
           border-radius: 12px;
           padding: 16px;
           box-sizing: border-box;
+          height: 100%;
         }
         .header {
           display: flex;
