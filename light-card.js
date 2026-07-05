@@ -257,7 +257,7 @@ class LightCard extends HTMLElement {
       bodyHtml = `<div class="list">${rows}</div>`;
     }
 
-    const showHeader = config.title || lights.length > 1 || scenes.length > 0;
+    const showHeader = config.title || lights.length > 1;
 
     const scenePanelHtml = scenes.length ? `
       <div class="scenes-panel">
@@ -288,17 +288,15 @@ class LightCard extends HTMLElement {
           padding: 16px;
           box-sizing: border-box;
           height: 100%;
+          display: flex;
+          flex-direction: column;
         }
         .header {
           display: flex;
           align-items: center;
           justify-content: space-between;
           margin-bottom: 12px;
-        }
-        .header-right {
-          display: flex;
-          align-items: center;
-          gap: 8px;
+          flex-shrink: 0;
         }
         .title {
           font-size: 14px;
@@ -310,6 +308,9 @@ class LightCard extends HTMLElement {
           color: var(--secondary-text-color, #727272);
         }
         .scenes-toggle {
+          position: absolute;
+          top: 16px;
+          right: 16px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -321,19 +322,24 @@ class LightCard extends HTMLElement {
           color: var(--secondary-text-color, #727272);
           cursor: pointer;
           padding: 0;
-          flex-shrink: 0;
           transition: background 0.15s, color 0.15s;
+          z-index: 0;
         }
         .scenes-toggle:hover {
           background: var(--divider-color, #e0e0e0);
           color: var(--primary-text-color, #212121);
+        }
+        .body-wrap {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
         .single {
           display: flex;
           flex-direction: column;
           align-items: center;
           gap: 8px;
-          padding: 8px 0;
         }
         .single-name {
           font-size: 22px;
@@ -348,6 +354,7 @@ class LightCard extends HTMLElement {
           display: flex;
           flex-direction: column;
           gap: 12px;
+          width: 100%;
         }
         .row {
           display: flex;
@@ -450,16 +457,16 @@ class LightCard extends HTMLElement {
       </style>
       <ha-card>
         <div class="card">
+          ${scenes.length ? `<button class="scenes-toggle" type="button" title="Scenes">${this._scenesIconSvg()}</button>` : ""}
           ${showHeader ? `
             <div class="header">
               <div class="title">${config.title ?? ""}</div>
-              <div class="header-right">
-                ${lights.length > 1 ? `<div class="summary">${onCount} of ${lights.length} on</div>` : ""}
-                ${scenes.length ? `<button class="scenes-toggle" type="button" title="Scenes">${this._scenesIconSvg()}</button>` : ""}
-              </div>
+              ${lights.length > 1 ? `<div class="summary">${onCount} of ${lights.length} on</div>` : ""}
             </div>
           ` : ""}
-          ${bodyHtml}
+          <div class="body-wrap">
+            ${bodyHtml}
+          </div>
           ${scenePanelHtml}
         </div>
       </ha-card>
