@@ -247,6 +247,7 @@ class LightCard extends HTMLElement {
     const onCount = lights.filter((l) => l.isOn).length;
     const steps = config.brightness_steps ?? Array.from({ length: 10 }, (_, i) => (i + 1) * 10);
     const maxStep = steps[steps.length - 1];
+    const showState = config.show_state !== false;
 
     let innerContentHtml;
 
@@ -269,6 +270,7 @@ class LightCard extends HTMLElement {
               <path d="M12,2A7,7 0 0,0 5,9C5,11.38 6.19,13.47 8,14.74V17A1,1 0 0,0 9,18H15A1,1 0 0,0 16,17V14.74C17.81,13.47 19,11.38 19,9A7,7 0 0,0 12,2M9,21A1,1 0 0,0 10,22H14A1,1 0 0,0 15,21V20H9V21Z"/>
             </svg>
             ${l.name}
+            ${showState ? `<span class="light-state" style="margin-left:auto;color:${l.color};">${l.label}</span>` : ""}
           </div>
           <div class="flex-spacer"></div>
           ${!l.isUnavailable ? `
@@ -431,10 +433,15 @@ class LightCard extends HTMLElement {
           color: var(--secondary-text-color, #727272);
           transition: color 0.6s ease;
           cursor: pointer;
-          width: fit-content;
         }
         .light-header:hover {
           color: var(--primary-text-color, #212121);
+        }
+        .light-state {
+          font-size: 13px;
+          font-weight: 400;
+          transition: color 0.6s ease;
+          flex-shrink: 0;
         }
         .flex-spacer { flex: 1; }
         .controls-row {
@@ -803,6 +810,7 @@ class LightCardEditor extends HTMLElement {
         .remove-btn:hover { background: var(--divider-color, #e0e0e0); }
         .add-btn { display: flex; align-items: center; justify-content: center; background: none; border: 1px dashed var(--divider-color, #e0e0e0); border-radius: 6px; padding: 10px; cursor: pointer; font-size: 13px; color: var(--primary-color, #03a9f4); width: 100%; box-sizing: border-box; }
         .add-btn:hover { background: var(--divider-color, #e0e0e0); }
+        .check-label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--primary-text-color, #212121); cursor: pointer; }
       </style>
       <div class="form">
         <div class="section">Lights</div>
@@ -815,7 +823,8 @@ class LightCardEditor extends HTMLElement {
 
         <div class="section">Display</div>
         <div class="row"><label>Title</label><input id="title" type="text" placeholder="Lights" /></div>
-        <div class="row"><label>Brightness steps</label><input id="brightness-steps" type="text" placeholder="5, 10, 15, … 100" /></div>
+        <div class="row"><label>Brightness steps</label><input id="brightness-steps" type="text" placeholder="10, 20, 30, … 100" /></div>
+        <label class="check-label"><input type="checkbox" id="show-state" /> Show state in header</label>
       </div>
     `;
 
@@ -836,6 +845,12 @@ class LightCardEditor extends HTMLElement {
         const parsed = raw.split(/[\s,]+/).map(Number).filter(n => !isNaN(n) && n > 0 && n <= 100);
         if (parsed.length) this._setField("brightness_steps", parsed);
       }
+    });
+
+    const showStateEl = this.shadowRoot.getElementById("show-state");
+    showStateEl.checked = c.show_state !== false;
+    showStateEl.addEventListener("change", (e) => {
+      this._setField("show_state", e.target.checked ? undefined : false);
     });
 
     this.shadowRoot.getElementById("add-entity-btn").addEventListener("click", () => this._addEntity());
