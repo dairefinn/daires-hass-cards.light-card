@@ -72,6 +72,26 @@ class LightCard extends HTMLElement {
     return { name, entityId: def.entity };
   }
 
+  _bulbFillSvg(size, fillPercent) {
+    const path = "M12,2A7,7 0 0,0 5,9C5,11.38 6.19,13.47 8,14.74V17A1,1 0 0,0 9,18H15A1,1 0 0,0 16,17V14.74C17.81,13.47 19,11.38 19,9A7,7 0 0,0 12,2M9,21A1,1 0 0,0 10,22H14A1,1 0 0,0 15,21V20H9V21Z";
+    // Bulb content spans y=2–22 within the 24-unit viewBox; map fill to that range
+    const contentTop = (2 / 24) * 100;
+    const contentBottom = (22 / 24) * 100;
+    const pct = Math.max(0, Math.min(100, fillPercent));
+    const topPct = pct <= 0 ? 100 : (contentBottom - (pct / 100) * (contentBottom - contentTop)).toFixed(2);
+    return `
+      <div style="position:relative;display:inline-block;width:${size}px;height:${size}px;flex-shrink:0;">
+        <svg width="${size}" height="${size}" viewBox="0 0 24 24">
+          <path d="${path}" style="fill:var(--divider-color,#e0e0e0);"/>
+        </svg>
+        <svg width="${size}" height="${size}" viewBox="0 0 24 24"
+             style="position:absolute;inset:0;clip-path:polygon(0% ${topPct}%,100% ${topPct}%,100% 100%,0% 100%);">
+          <path d="${path}" style="fill:var(--primary-color,#03a9f4);"/>
+        </svg>
+      </div>
+    `;
+  }
+
   _bulbSvg(size, color) {
     return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="${color}" style="transition:fill 0.6s ease;flex-shrink:0;">
       <path d="M12,2A7,7 0 0,0 5,9C5,11.38 6.19,13.47 8,14.74V17A1,1 0 0,0 9,18H15A1,1 0 0,0 16,17V14.74C17.81,13.47 19,11.38 19,9A7,7 0 0,0 12,2M9,21A1,1 0 0,0 10,22H14A1,1 0 0,0 15,21V20H9V21Z"/>
@@ -172,9 +192,6 @@ class LightCard extends HTMLElement {
         row.classList.add("row-interactive");
         this._attachTriggers(row, row.dataset.entity);
       });
-    } else {
-      const card = this.shadowRoot.querySelector(".card");
-      if (card) this._attachTriggers(card, null);
     }
   }
 
@@ -228,16 +245,57 @@ class LightCard extends HTMLElement {
     const background = config.background ?? "var(--card-background-color, #fff)";
     const isSingle = lights.length === 1;
     const onCount = lights.filter((l) => l.isOn).length;
+    const steps = config.brightness_steps ?? Array.from({ length: 10 }, (_, i) => (i + 1) * 10);
+    const maxStep = steps[steps.length - 1];
 
-    let bodyHtml;
+    let innerContentHtml;
 
     if (isSingle) {
       const l = lights[0];
-      bodyHtml = `
-        <div class="single">
-          ${this._bulbSvg(64, l.color)}
-          <div class="single-name">${l.name}</div>
-          <div class="single-status" style="color:${l.color}">${l.label}</div>
+      const hasBrightness = l.isOn && l.brightnessPercent != null;
+      const accentColor = l.isOn && !l.isUnavailable
+        ? "var(--primary-color, #03a9f4)"
+        : "var(--divider-color, #e0e0e0)";
+      const displayPercent = l.isUnavailable ? 0 : l.isOn ? (l.brightnessPercent ?? 100) : 0;
+
+
+      innerContentHtml = `
+        <div class="bulb-bg">
+          ${this._bulbFillSvg(96, displayPercent)}
+        </div>
+        <div class="card-content">
+          <div class="light-header">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0;">
+              <path d="M12,2A7,7 0 0,0 5,9C5,11.38 6.19,13.47 8,14.74V17A1,1 0 0,0 9,18H15A1,1 0 0,0 16,17V14.74C17.81,13.47 19,11.38 19,9A7,7 0 0,0 12,2M9,21A1,1 0 0,0 10,22H14A1,1 0 0,0 15,21V20H9V21Z"/>
+            </svg>
+            ${l.name}
+          </div>
+          <div class="flex-spacer"></div>
+          ${!l.isUnavailable ? `
+            <div class="controls-row">
+              <div class="left-pad"></div>
+              <div class="controls">
+                <button class="ctrl-btn" id="dim-btn" ${!hasBrightness ? "disabled" : ""}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11H7v-2h10v2z"/>
+                  </svg>
+                </button>
+                <button class="ctrl-btn toggle-btn" id="toggle-btn" style="background:${accentColor};transition:background 0.6s ease;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M16.56,5.44L15.11,6.89C16.84,7.94 18,9.83 18,12A6,6 0 0,1 12,18A6,6 0 0,1 6,12C6,9.83 7.16,7.94 8.89,6.89L7.44,5.44C5.36,6.88 4,9.28 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12C20,9.28 18.64,6.88 16.56,5.44M13,3H11V13H13V3Z"/>
+                  </svg>
+                </button>
+                <button class="ctrl-btn" id="brighten-btn" ${l.isUnavailable || l.brightnessPercent >= maxStep ? "disabled" : ""}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
+                  </svg>
+                </button>
+              </div>
+              ${scenes.length ? `
+                <button class="scenes-toggle" type="button" title="Scenes">${this._scenesIconSvg()}</button>
+              ` : `<div class="left-pad"></div>`}
+            </div>
+          ` : ""}
         </div>
       `;
     } else {
@@ -254,10 +312,20 @@ class LightCard extends HTMLElement {
       `
         )
         .join("");
-      bodyHtml = `<div class="list">${rows}</div>`;
-    }
 
-    const showHeader = config.title || lights.length > 1;
+      const showHeader = config.title || lights.length > 1;
+      innerContentHtml = `
+        ${showHeader ? `
+          <div class="header">
+            <div class="title">${config.title ?? ""}</div>
+            ${lights.length > 1 ? `<div class="summary">${onCount} of ${lights.length} on</div>` : ""}
+          </div>
+        ` : ""}
+        <div class="body-wrap">
+          <div class="list">${rows}</div>
+        </div>
+      `;
+    }
 
     const scenePanelHtml = scenes.length ? `
       <div class="scenes-panel">
@@ -290,6 +358,7 @@ class LightCard extends HTMLElement {
           height: 100%;
           display: flex;
           flex-direction: column;
+          overflow: hidden;
         }
         .header {
           display: flex;
@@ -308,47 +377,103 @@ class LightCard extends HTMLElement {
           color: var(--secondary-text-color, #727272);
         }
         .scenes-toggle {
-          position: absolute;
-          top: 16px;
-          right: 16px;
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 28px;
-          height: 28px;
-          border-radius: 6px;
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
           border: none;
           background: none;
           color: var(--secondary-text-color, #727272);
           cursor: pointer;
-          padding: 0;
+          padding: 6px;
           transition: background 0.15s, color 0.15s;
-          z-index: 0;
+          flex-shrink: 0;
+          box-sizing: border-box;
         }
         .scenes-toggle:hover {
           background: var(--divider-color, #e0e0e0);
           color: var(--primary-text-color, #212121);
         }
+        .scenes-toggle.abs {
+          position: absolute;
+          top: 16px;
+          right: 16px;
+          z-index: 2;
+          border-radius: 6px;
+          width: 28px;
+          height: 28px;
+          padding: 0;
+        }
+        .bulb-bg {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          opacity: 0.25;
+          z-index: 0;
+        }
+        .card-content {
+          position: relative;
+          z-index: 1;
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+        }
+        .light-header {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 14px;
+          font-weight: 500;
+          color: var(--secondary-text-color, #727272);
+          transition: color 0.6s ease;
+          cursor: pointer;
+          width: fit-content;
+        }
+        .light-header:hover {
+          color: var(--primary-text-color, #212121);
+        }
+        .flex-spacer { flex: 1; }
+        .controls-row {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          margin-top: 12px;
+        }
+        .left-pad { width: 32px; flex-shrink: 0; }
+        .controls {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 4px;
+        }
+        .ctrl-btn {
+          background: none;
+          border: none;
+          cursor: pointer;
+          padding: 6px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--primary-text-color, #212121);
+          transition: background 0.2s;
+        }
+        .ctrl-btn:hover { background: var(--divider-color, #e0e0e0); }
+        .ctrl-btn:disabled { opacity: 0.3; cursor: default; pointer-events: none; }
+        .toggle-btn {
+          color: #fff;
+        }
+        .toggle-btn:hover { opacity: 0.85; background: none !important; }
         .body-wrap {
           flex: 1;
           display: flex;
           align-items: center;
           justify-content: center;
-        }
-        .single {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 8px;
-        }
-        .single-name {
-          font-size: 22px;
-          font-weight: 600;
-          color: var(--primary-text-color, #212121);
-        }
-        .single-status {
-          font-size: 13px;
-          transition: color 0.6s ease;
         }
         .list {
           display: flex;
@@ -396,7 +521,7 @@ class LightCard extends HTMLElement {
           opacity: 0;
           pointer-events: none;
           transition: opacity 0.15s ease;
-          z-index: 1;
+          z-index: 3;
         }
         .scenes-panel.open {
           opacity: 1;
@@ -457,20 +582,45 @@ class LightCard extends HTMLElement {
       </style>
       <ha-card>
         <div class="card">
-          ${scenes.length ? `<button class="scenes-toggle" type="button" title="Scenes">${this._scenesIconSvg()}</button>` : ""}
-          ${showHeader ? `
-            <div class="header">
-              <div class="title">${config.title ?? ""}</div>
-              ${lights.length > 1 ? `<div class="summary">${onCount} of ${lights.length} on</div>` : ""}
-            </div>
-          ` : ""}
-          <div class="body-wrap">
-            ${bodyHtml}
-          </div>
+          ${!isSingle && scenes.length ? `<button class="scenes-toggle abs" type="button" title="Scenes">${this._scenesIconSvg()}</button>` : ""}
+          ${innerContentHtml}
           ${scenePanelHtml}
         </div>
       </ha-card>
     `;
+
+    if (isSingle) {
+      const entityId = lights[0].entityId;
+      this.shadowRoot.querySelector(".light-header")?.addEventListener("click", () => {
+        this.dispatchEvent(new CustomEvent("hass-more-info", {
+          detail: { entityId },
+          bubbles: true,
+          composed: true,
+        }));
+      });
+    }
+
+    if (isSingle && !lights[0].isUnavailable) {
+      const entityId = lights[0].entityId;
+      this.shadowRoot.getElementById("toggle-btn")?.addEventListener("click", () => {
+        this._hass?.callService("homeassistant", "toggle", { entity_id: entityId });
+      });
+      this.shadowRoot.getElementById("dim-btn")?.addEventListener("click", () => {
+        const current = lights[0].brightnessPercent ?? 0;
+        const prev = [...steps].reverse().find(s => s < current);
+        if (prev != null) {
+          this._hass?.callService("light", "turn_on", { entity_id: entityId, brightness_pct: prev });
+        } else {
+          this._hass?.callService("light", "turn_off", { entity_id: entityId });
+        }
+      });
+      this.shadowRoot.getElementById("brighten-btn")?.addEventListener("click", () => {
+        const current = lights[0].isOn ? (lights[0].brightnessPercent ?? 0) : 0;
+        const next = steps.find(s => s > current) ?? steps[steps.length - 1];
+        this._hass?.callService("light", "turn_on", { entity_id: entityId, brightness_pct: next });
+      });
+    }
+
     this._attachInteractionListeners();
     this._attachSceneListeners();
   }
@@ -665,6 +815,7 @@ class LightCardEditor extends HTMLElement {
 
         <div class="section">Display</div>
         <div class="row"><label>Title</label><input id="title" type="text" placeholder="Lights" /></div>
+        <div class="row"><label>Brightness steps</label><input id="brightness-steps" type="text" placeholder="5, 10, 15, … 100" /></div>
       </div>
     `;
 
@@ -674,6 +825,18 @@ class LightCardEditor extends HTMLElement {
     const titleEl = this.shadowRoot.getElementById("title");
     titleEl.value = c.title ?? "";
     titleEl.addEventListener("change", (e) => this._setField("title", e.target.value));
+
+    const stepsEl = this.shadowRoot.getElementById("brightness-steps");
+    stepsEl.value = c.brightness_steps ? c.brightness_steps.join(", ") : "";
+    stepsEl.addEventListener("change", (e) => {
+      const raw = e.target.value.trim();
+      if (!raw) {
+        this._setField("brightness_steps", undefined);
+      } else {
+        const parsed = raw.split(/[\s,]+/).map(Number).filter(n => !isNaN(n) && n > 0 && n <= 100);
+        if (parsed.length) this._setField("brightness_steps", parsed);
+      }
+    });
 
     this.shadowRoot.getElementById("add-entity-btn").addEventListener("click", () => this._addEntity());
     this.shadowRoot.getElementById("add-scene-btn").addEventListener("click", () => this._addScene());
