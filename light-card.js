@@ -248,6 +248,7 @@ class LightCard extends HTMLElement {
     const steps = config.brightness_steps ?? Array.from({ length: 10 }, (_, i) => (i + 1) * 10);
     const maxStep = steps[steps.length - 1];
     const showState = config.show_state !== false;
+    const showName = config.show_name !== false;
     const transparent = config.transparent === true;
 
     let innerContentHtml;
@@ -266,13 +267,14 @@ class LightCard extends HTMLElement {
           ${this._bulbFillSvg(96, displayPercent)}
         </div>
         <div class="card-content">
+          ${showName ? `
           <div class="light-header">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0;">
               <path d="M12,2A7,7 0 0,0 5,9C5,11.38 6.19,13.47 8,14.74V17A1,1 0 0,0 9,18H15A1,1 0 0,0 16,17V14.74C17.81,13.47 19,11.38 19,9A7,7 0 0,0 12,2M9,21A1,1 0 0,0 10,22H14A1,1 0 0,0 15,21V20H9V21Z"/>
             </svg>
             ${l.name}
             ${showState ? `<span class="light-state" style="margin-left:auto;color:${l.color};">${l.label}</span>` : ""}
-          </div>
+          </div>` : ""}
           <div class="flex-spacer"></div>
           ${!l.isUnavailable ? `
             <div class="controls-row">
@@ -829,6 +831,7 @@ class LightCardEditor extends HTMLElement {
         <div class="section">Display</div>
         <div class="row"><label>Title</label><input id="title" type="text" placeholder="Lights" /></div>
         <div class="row"><label>Brightness steps</label><input id="brightness-steps" type="text" placeholder="10, 20, 30, … 100" /></div>
+        <label class="check-label"><input type="checkbox" id="show-name" /> Show entity name</label>
         <label class="check-label"><input type="checkbox" id="show-state" /> Show state in header</label>
         <label class="check-label"><input type="checkbox" id="transparent" /> Transparent background</label>
       </div>
@@ -851,6 +854,12 @@ class LightCardEditor extends HTMLElement {
         const parsed = raw.split(/[\s,]+/).map(Number).filter(n => !isNaN(n) && n > 0 && n <= 100);
         if (parsed.length) this._setField("brightness_steps", parsed);
       }
+    });
+
+    const showNameEl = this.shadowRoot.getElementById("show-name");
+    showNameEl.checked = c.show_name !== false;
+    showNameEl.addEventListener("change", (e) => {
+      this._setField("show_name", e.target.checked ? undefined : false);
     });
 
     const showStateEl = this.shadowRoot.getElementById("show-state");

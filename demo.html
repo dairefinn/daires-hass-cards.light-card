@@ -56,6 +56,7 @@
   <daires-hass-cards-light-card id="ex-on"></daires-hass-cards-light-card>
   <daires-hass-cards-light-card id="ex-off"></daires-hass-cards-light-card>
   <daires-hass-cards-light-card id="ex-multi"></daires-hass-cards-light-card>
+  <div class="fixed-height"><daires-hass-cards-light-card id="ex-minimal"></daires-hass-cards-light-card></div>
 
   <h2>entity states</h2>
   <daires-hass-cards-light-card id="state-on-bright"></daires-hass-cards-light-card>
@@ -75,6 +76,11 @@
   <daires-hass-cards-light-card id="bg-white"></daires-hass-cards-light-card>
   <daires-hass-cards-light-card id="bg-dark"></daires-hass-cards-light-card>
   <daires-hass-cards-light-card id="bg-tinted"></daires-hass-cards-light-card>
+
+  <h2>transparent (no background or border)</h2>
+  <daires-hass-cards-light-card id="transparent-on"></daires-hass-cards-light-card>
+  <daires-hass-cards-light-card id="transparent-off"></daires-hass-cards-light-card>
+  <daires-hass-cards-light-card id="transparent-page" style="background:#e8eaf6;border-radius:12px;"></daires-hass-cards-light-card>
 
   <h2>interactions</h2>
   <daires-hass-cards-light-card id="int-tap-toggle"></daires-hass-cards-light-card>
@@ -132,6 +138,7 @@
     setup("ex-on",    { entity: "light.living_room" });
     setup("ex-off",   { entity: "light.bedroom" });
     setup("ex-multi", { title: "All Lights", entities: ["light.living_room", "light.bedroom", "light.kitchen", "light.hallway", "light.office"] });
+    setup("ex-minimal", { entity: "light.living_room", transparent: true, show_name: false, show_state: false });
 
     // ── entity states ─────────────────────────────────────────────────────────
     setup("state-on-bright", { entity: "light.living_room" });  // on, 90%
@@ -151,6 +158,11 @@
     setup("bg-white",  { entity: "light.living_room", background: "#ffffff" });
     setup("bg-dark",   { entity: "light.living_room", background: "#1c1c1e" });
     setup("bg-tinted", { entity: "light.living_room", background: "#fff8e1" });
+
+    // ── transparent ───────────────────────────────────────────────────────────
+    setup("transparent-on",   { entity: "light.living_room", transparent: true });
+    setup("transparent-off",  { entity: "light.bedroom",     transparent: true });
+    setup("transparent-page", { entity: "light.kitchen",     transparent: true }); // on a coloured host
 
     // ── interactions ──────────────────────────────────────────────────────────
     setup("int-tap-toggle",     { entity: "light.living_room", interactions: [{ action: "toggle" }] });
