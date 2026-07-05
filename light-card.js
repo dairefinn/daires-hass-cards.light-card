@@ -248,6 +248,7 @@ class LightCard extends HTMLElement {
     const steps = config.brightness_steps ?? Array.from({ length: 10 }, (_, i) => (i + 1) * 10);
     const maxStep = steps[steps.length - 1];
     const showState = config.show_state !== false;
+    const transparent = config.transparent === true;
 
     let innerContentHtml;
 
@@ -350,10 +351,14 @@ class LightCard extends HTMLElement {
     this.shadowRoot.innerHTML = `
       <style>
         :host { display: block; height: 100%; }
-        ha-card { display: block; height: 100%; }
+        ha-card {
+          display: block;
+          height: 100%;
+          ${transparent ? "background: transparent !important; box-shadow: none !important; border: none !important;" : ""}
+        }
         .card {
           position: relative;
-          background: ${background};
+          background: ${transparent ? "transparent" : background};
           border-radius: 12px;
           padding: 16px;
           box-sizing: border-box;
@@ -825,6 +830,7 @@ class LightCardEditor extends HTMLElement {
         <div class="row"><label>Title</label><input id="title" type="text" placeholder="Lights" /></div>
         <div class="row"><label>Brightness steps</label><input id="brightness-steps" type="text" placeholder="10, 20, 30, … 100" /></div>
         <label class="check-label"><input type="checkbox" id="show-state" /> Show state in header</label>
+        <label class="check-label"><input type="checkbox" id="transparent" /> Transparent background</label>
       </div>
     `;
 
@@ -851,6 +857,12 @@ class LightCardEditor extends HTMLElement {
     showStateEl.checked = c.show_state !== false;
     showStateEl.addEventListener("change", (e) => {
       this._setField("show_state", e.target.checked ? undefined : false);
+    });
+
+    const transparentEl = this.shadowRoot.getElementById("transparent");
+    transparentEl.checked = c.transparent === true;
+    transparentEl.addEventListener("change", (e) => {
+      this._setField("transparent", e.target.checked ? true : undefined);
     });
 
     this.shadowRoot.getElementById("add-entity-btn").addEventListener("click", () => this._addEntity());
