@@ -2,7 +2,7 @@
 
 A clean light entity card for Home Assistant. Shows a single light with a large bulb icon and brightness percentage, or a compact list view for multiple lights.
 
-<img width="920" height="967" alt="image" src="https://github.com/user-attachments/assets/cbd8657a-9b7e-4934-b03d-e90396f323f9" />
+<img width="100%" alt="image" src="https://github.com/user-attachments/assets/2f6a3dac-810c-4dfb-9dc8-6c4274299c08" />
 
 ## Installation
 
